@@ -27,14 +27,18 @@ while ($true) {
     Write-Host "Invalid selection."
 }
 
-# Check AWS SSO credentials from default profile (assumes AWS SSO login has been run)
+# Ask user for AWS profile name
+$AWS_PROFILE = Read-Host "Enter the AWS profile name to use (e.g. your SSO profile name)"
+
+# Check AWS SSO credentials from specified profile
 try {
-    $awsCreds = aws sts get-caller-identity --output json | ConvertFrom-Json
+    $awsCreds = aws sts get-caller-identity --profile $AWS_PROFILE --output json | ConvertFrom-Json
     if ($awsCreds) {
-        Write-Host "Using active AWS SSO credentials (via 'aws sso login')"
+        Write-Host "Using AWS SSO credentials from profile '$AWS_PROFILE'"
+        $env:AWS_PROFILE = $AWS_PROFILE
     }
 } catch {
-    Write-Host "No active AWS SSO session found. Please run 'aws sso login' and try again."
+    Write-Host "No active AWS SSO session found for profile '$AWS_PROFILE'. Please run 'aws sso login --profile $AWS_PROFILE' and try again."
     exit 1
 }
 

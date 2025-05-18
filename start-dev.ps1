@@ -5,11 +5,25 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "Starting Dev Environment Setup..."
 
+# Ensure the script is not run from inside the devops folder
+$currentDir = Split-Path -Leaf (Get-Location)
+if ($currentDir -eq "devops") {
+    Write-Host "Error: Please run this script from the project root like .\devops\start-dev.ps1"
+    exit 1
+}
+
 # Prompt for PBI number
 while ($true) {
     $PBI_NUMBER = Read-Host "What is the PBI number? (7 or 8 digits)"
     if ($PBI_NUMBER -match '^[0-9]{7,8}$') { break }
     Write-Host "Invalid PBI number. It must be 7 or 8 digits."
+}
+
+# Prompt for PBI description
+while ($true) {
+    $PBI_DESC = Read-Host "Enter a short description for the PBI (no spaces, use hyphens or underscores if needed)"
+    if ($PBI_DESC -match '^\S+$') { break }
+    Write-Host "Description must be a single word (no spaces)."
 }
 
 # Prompt for change type
@@ -24,7 +38,7 @@ while ($true) {
         $CHANGE_TYPE = $changeTypes[$choice - 1]
         break
     }
-    Write-Host "Invalid selection."
+    Write-Host "Invalid selection. Try again."
 }
 
 # Ask user for AWS profile name
@@ -42,18 +56,32 @@ try {
     exit 1
 }
 
-# Git commands
-Write-Host "Running git fetch and switching to develop..."
-git fetch
+# Git operations
+Write-Host "Verifying branch and pulling latest changes..."
 git checkout develop
+git pull
 
-$branchName = "$CHANGE_TYPE/$PBI_NUMBER"
-Write-Host "Creating new branch: $branchName"
+# Construct the new branch name
+$branchName = "$CHANGE_TYPE/$PBI_NUMBER-$PBI_DESC"
+
+# If branch already exists, add a random 2-char suffix
+if (git branch --list $branchName) {
+    $suffix = -join ((48..57) + (97..122) | Get-Random -Count 2 | ForEach-Object {[char]$_})
+    $branchName = "$branchName-$suffix"
+    Write-Host "Branch already exists, using new branch name: $branchName"
+} else {
+    Write-Host "Creating new branch: $branchName"
+}
+
 git checkout -b $branchName
 
 # Create temp folder
 $tempDir = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath() + [System.IO.Path]::GetRandomFileName())
 Write-Host "Created temporary folder: $($tempDir.FullName)"
+
+# Terraform initialization
+Write-Host "Running terraform init..."
+terraform init -reconfigure --backend-config="bucket=mybucet"
 
 # Terraform operations
 Write-Host "Running terraform state pull..."

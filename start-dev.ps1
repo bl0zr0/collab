@@ -58,7 +58,7 @@ try {
 
 # Git operations
 Write-Host "Verifying branch and pulling latest changes..."
-git checkout develop
+git checkout dev
 git pull
 
 # Construct the new branch name
@@ -84,11 +84,12 @@ Write-Host "Running terraform init..."
 terraform init -reconfigure --backend-config="bucket=mybucet"
 
 # Terraform operations
+$workspaceName = $branchName -replace '/', '-'
+Write-Host "Creating terraform workspace: $workspaceName"
+terraform workspace new $workspaceName
+
 Write-Host "Running terraform state pull..."
 terraform state pull > "$($tempDir.FullName)\terraform.tfstate"
-
-Write-Host "Creating terraform workspace: $PBI_NUMBER"
-terraform workspace new $PBI_NUMBER
 
 Write-Host "Pushing state to workspace..."
 terraform state push "$($tempDir.FullName)\terraform.tfstate"
@@ -97,4 +98,4 @@ terraform state push "$($tempDir.FullName)\terraform.tfstate"
 New-Item -ItemType File -Name ".start-dev" | Out-Null
 Write-Host ".start-dev file created."
 
-Write-Host "Done! You are now in branch '$branchName' and workspace '$PBI_NUMBER'."
+Write-Host "Done! You are now in branch '$branchName' and workspace '$workspaceName'."

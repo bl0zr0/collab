@@ -94,8 +94,4 @@ terraform state pull > "$($tempDir.FullName)\terraform.tfstate"
 Write-Host "Pushing state to workspace..."
 terraform state push "$($tempDir.FullName)\terraform.tfstate"
 
-# Create marker file
-New-Item -ItemType File -Name ".start-dev" | Out-Null
-Write-Host ".start-dev file created."
-
 Write-Host "Done! You are now in branch '$branchName' and workspace '$workspaceName'."
